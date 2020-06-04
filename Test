@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+basedir=$(cd "$(dirname "$0")" && pwd -P)
+export BUILDDIR="$basedir/.build"
+
+while [[ ${#@} -gt 0 ]]; do case "$1" in
+    -C)     shift; rm -rf "$BUILDDIR";;
+    *)      break;;
+esac; done
+
+cd "$basedir"
+. ./activate --python=python3
+pytest -q "${@-t/}"

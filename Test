@@ -1,14 +1,46 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+EX_UNAVAILABLE=69       # sysexits.h
+
+die()   { local exitcode=$1; shift; echo 1>&2 ERROR: "$@"; exit $exitcode; }
+warn()  { echo 1>&2 WARNING: "$@"; }
+Clean() { rm -rf "$BUILDDIR"; }
+
+####################################################################
+
 basedir=$(cd "$(dirname "$0")" && pwd -P)
 export BUILDDIR="$basedir/.build"
 
+#   Determine path to Python interpreter with which venv was config'd, if any.
+venvcfg="$BUILDDIR/virtualenv/pyvenv.cfg"
+vepython=$(sed 2>/dev/null -ne 's/^base-executable = //p' "$venvcfg" || true)
+
+python=
 while [[ ${#@} -gt 0 ]]; do case "$1" in
-    -C)     shift; rm -rf "$BUILDDIR";;
-    *)      break;;
+    -C)             Clean; shift;;
+    --python)       Clean; shift; python=${1};    shift;;
+    --python=*)     Clean;        python=${1#*=}; shift;;
+    *)              break;;
 esac; done
 
+#   We require at least 3.7 for the test framework at the moment;
+#   we'll have to figure out how to test Python code on lesser versions.
+vercode='import sys; exit(not(sys.version_info >= (3, 7)))'
+if [[ -z $python ]]; then
+    if [[ -z $vepython ]]; then
+        python=python3          # Linux default Python 3 interpreter
+    else
+        $vepython -c "$vercode" \
+            || warn "Virtualenv python not ≥3.7: $($vepython --version 2>&1)"
+    fi
+fi
+if [[ -n $python ]]; then       # $python may have been set above
+   "$python" -c 'import sys; exit(not(sys.version_info >= (3, 7)))' \
+       || die $EX_UNAVAILABLE \
+           "Python not ≥3.7: $python is $($python --version 2>&1)"
+fi
+
 cd "$basedir"
-. ./activate --python=python3
+. ./activate -q "${python:+--python=}$python"
 pytest -q "${@-t/}"

@@ -99,6 +99,15 @@ directories is:
     }
 
 
+References and Tools
+--------------------
+
+- [XDG Base Directory Specification][xdg-spec]. Version 0.7, 2010-11-24
+  when last checked.
+- Python [`xdg`][pi xdg] module v4.0.1 (PyPI).
+
+
 
 <!-------------------------------------------------------------------->
+[pi xdg]: https://pypi.org/project/xdg/
 [xdg-spec]: https://specifications.freedesktop.org/basedir-spec/basedir-spec-latest.html
